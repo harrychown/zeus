@@ -1,3 +1,7 @@
+rule all:
+    input:
+        "results/summary.txt"
+
 rule quast:
     input:
         fasta="demo_data/assembly/EMBL1.spades-run-10.Chr1.fa",
@@ -32,7 +36,21 @@ rule busco:
         """
         busco -m genome -i {input.fasta} -o busco --out_path {output}  --download_path {input.busco_db_path} -f -c {threads} {params.busco_db}
         """
-    
+
+rule summarise:
+    input:
+        quast="results/quast/report.tsv",
+        busco="results/busco/busco/short_summary.specific.eurotiales_odb10.busco.txt",
+    output:
+        "results/summary.txt",
+    log:
+        "logs/summarise.log",
+    shell:
+        """
+        LENGTH=$(cat {quast} | grep "Total length (>= 0 bp)" | awk '{print $NF}' )
+        BUSCO=$(cat {busco} | grep "C:" | cut -d":" -f2 | cut -d"%" -f1)
+        echo "${LENGTH}	${BUSCO}" > {output}    
+        """
 
 
 
