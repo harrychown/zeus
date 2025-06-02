@@ -47,9 +47,9 @@ rule summarise:
         "logs/summarise.log",
     shell:
         """
-        LENGTH=$(cat {quast} | grep "Total length (>= 0 bp)" | awk '{print $NF}' )
-        BUSCO=$(cat {busco} | grep "C:" | cut -d":" -f2 | cut -d"%" -f1)
-        echo "${LENGTH}	${BUSCO}" > {output}    
+        LENGTH=$(grep "Total length (>= 0 bp)" {input.quast} | cut -f2)
+        BUSCO=$(grep "C:" {input.busco} | cut -d":" -f2 | cut -d"%" -f1)
+        echo "${{LENGTH}}	${{BUSCO}}" > {output}    
         """
 
 
