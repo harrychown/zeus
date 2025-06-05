@@ -52,6 +52,21 @@ rule miniprot:
         """
         miniprot -t {threads} --gff -I {input.fasta} {input.protein} > {output}
         """
+rule earlgrey:
+    input:
+        fasta="demo_data/assembly/EMBL1.spades-run-10.Chr1.fa",
+    output:
+        directory("results/earlgrey/"),
+    log:
+        "logs/earlgrey.log",
+    conda:
+        "workflow/envs/earlgrey.yaml"
+    threads: 4
+    shell:
+        """
+        earlGrey -g {input.fasta} -t {threads} -o {output}       
+        """
+
 
 rule summarise:
     input:
