@@ -57,6 +57,7 @@ rule summarise:
     input:
         quast="results/quast/report.tsv",
         busco="results/busco/busco/short_summary.specific.eurotiales_odb10.busco.txt",
+        miniprot="results/miniprot/miniprot.gff",
     output:
         "results/summary.txt",
     log:
@@ -65,7 +66,8 @@ rule summarise:
         """
         LENGTH=$(grep "Total length (>= 0 bp)" {input.quast} | cut -f2)
         BUSCO=$(grep "C:" {input.busco} | cut -d":" -f2 | cut -d"%" -f1)
-        echo "${{LENGTH}}	${{BUSCO}}" > {output}    
+        MINIPROT=$(cat {input.miniprot} | grep -c "mRNA" )
+        echo "${{LENGTH}}	${{BUSCO}}  ${{MINIPROT}}" > {output}    
         """
 
 
