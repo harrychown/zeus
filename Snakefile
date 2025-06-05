@@ -52,6 +52,7 @@ rule miniprot:
         """
         miniprot -t {threads} --gff -I {input.fasta} {input.protein} > {output}
         """
+        
 rule earlgrey:
     input:
         fasta="demo_data/assembly/EMBL1.spades-run-10.Chr1.fa",
