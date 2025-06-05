@@ -37,6 +37,22 @@ rule busco:
         busco -m genome -i {input.fasta} -o busco --out_path {output}  --download_path {input.busco_db_path} -f -c {threads} {params.busco_db}
         """
 
+rule miniprot:
+    input:
+        fasta="demo_data/assembly/EMBL1.spades-run-10.Chr1.fa",
+        protein="demo_data/protein/A1163.protein.faa",
+    output:
+        "results/miniprot/miniprot.gff",
+    log:
+        "logs/miniprot.log",
+    conda:
+        "workflow/envs/busco.yaml"
+    threads: 4
+    shell:
+        """
+        miniprot -t {threads} --gff -I {input.fasta} {input.protein} > {output}
+        """
+
 rule summarise:
     input:
         quast="results/quast/report.tsv",
