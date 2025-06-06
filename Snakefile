@@ -1,3 +1,7 @@
+# Declare samples
+
+
+
 rule all:
     input:
         "results/summary.txt"
@@ -75,20 +79,18 @@ rule dagchainer:
         ref_miniprot="demo_data/miniprot/CEA10_Chr1.gff",
         miniprot="results/miniprot/miniprot.gff",
     output:
-        "results/dagchainer/dagchainer.gff",
-
+        matchlist="results/dagchainer/test.matchList",
+        filtered="results/dagchainer/test.matchList.filtered",
+        coords="results/dagchainer/test.matchList.filtered.aligncoords",
     log:
         "logs/dagchainer.log",
     conda:
         "workflow/envs/dagchainer.yaml"
     shell:
         """
-        python $PATH_TO_MINICOMBINER -r={input.ref_miniprot} -d={miniprot} -o=test.matchList
-        # DAGchainer
-        conda activate dagchainer
-        ~/anaconda3/envs/dagchainer/bin/accessory_scripts/filter_repetitive_matches.pl 5 < test.matchList > test.matchList.filtered
-        run_DAG_chainer.pl -i  test.matchList.filtered
-        ###DAG_LENGTH=$(grep -v "#" test.matchList.filtered.aligncoords | awk '{sum += ($7 > $8 ? $7 - $8 : $8 - $7)} END {print sum}')
+        python workflow/scripts/minicombiner.py -r={input.ref_miniprot} -d={miniprot} -o={output.matchlist}
+        workflow/scripts/dagchainer/bin/accessory_scripts/filter_repetitive_matches.pl 5 < {output.matchlist} > {output.filtered}
+        run_DAG_chainer.pl -i  {output.filtered}
         """
 rule summarise:
     input:
@@ -96,6 +98,7 @@ rule summarise:
         busco="results/busco/busco/short_summary.specific.eurotiales_odb10.busco.txt",
         miniprot="results/miniprot/miniprot.gff",
         earlgrey="results/earlgrey/test_EarlGrey/test_summaryFiles/test.highLevelCount.txt",
+        dagchainer="results/dagchainer/test.matchList.filtered.aligncoords",
     output:
         "results/summary.txt",
     log:
@@ -114,8 +117,9 @@ rule summarise:
         LTR=$(cat {input.earlgrey} | grep "LTR" |  cut -d$'\t' -f3 || echo "0" )
         OTHER=$(cat {input.earlgrey} | grep "Other (Simple Repeat, Microsatellite, RNA)" |  cut -d$'\t' -f3 || echo "0" )
         UNCLASS=$(cat {input.earlgrey} | grep "Unclassified" |  cut -d$'\t' -f3 || echo "0" )
-        
-        echo "${{LENGTH}}	${{BUSCO}}  ${{MINIPROT}}   ${{DNA}}    ${{LINE}}   ${{LTR}}    ${{OTHER}}  ${{UNCLASS}}" > {output}    
+        # Dagchainer
+        DAG_LENGTH=$(grep -v "#" {input.dagchainer} | awk '{{sum += ($7 > $8 ? $7 - $8 : $8 - $7)}} END {print sum}')        
+        echo "${{LENGTH}}	${{BUSCO}}  ${{MINIPROT}}   ${{DNA}}    ${{LINE}}   ${{LTR}}    ${{OTHER}}  ${{UNCLASS}}    ${{DAG_LENGTH}}" > {output}    
         """
 
 
