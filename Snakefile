@@ -1,3 +1,22 @@
+import os
+
+GROUPED_DATA = [
+    {
+        "sample": "demo_data/assembly/EMBL1.spades-run-10.Chr1.fa",
+        "reference": "demo_data/reference_genome/CEA10_Chr1.fasta",
+        "busco_db": "eurotiales_odb10",
+        "protein": "demo_data/protein/A1163.protein.faa",
+    }
+]
+
+
+
+# Use basenames (without extensions) for output filenames
+def strip_ext(path):
+    return os.path.splitext(os.path.basename(path))[0]
+
+
+
 rule all:
     input:
         "results/summary.txt"
@@ -22,31 +41,47 @@ rule quast:
 
 rule busco:
     input:
-        fasta="demo_data/assembly/EMBL1.spades-run-10.Chr1.fa",
+        fasta=lambda wc: next(p["sample"] for p in GROUPED_DATA if strip_ext(p["sample"]) == wc.sample),
         busco_db_path="demo_data/busco_db/",
     params:
-        busco_db="-l eurotiales_odb10 --miniprot",
+        busco_db_name=lambda wc: next(p["busco_db"] for p in GROUPED_DATA if strip_ext(p["sample"]) == wc.sample)
     output:
-        directory = directory("results/busco/"),
-        report="results/busco/busco/short_summary.specific.eurotiales_odb10.busco.txt",
+        directory = directory("results/samples/{sample}/{busco_db}"),
+        report="results/samples/{sample}/{busco_db}/busco/short_summary.specific.{busco_db}.busco.txt",
     log:
-        "logs/busco.log",
+        "logs/samples/{sample}/busco.{busco_db}.log",
     conda:
         "workflow/envs/busco.yaml"
     threads: 4
     shell:
         """
-        busco -m genome -i {input.fasta} -o busco --out_path {output.directory}  --download_path {input.busco_db_path} -f -c {threads} {params.busco_db}
+        busco -m genome -i {input.fasta} -o busco --out_path {output.directory} --download_path {input.busco_db_path} --miniprot -l {params.busco_db_name} -f -c {threads}
         """
 
 rule miniprot:
     input:
-        fasta="demo_data/assembly/EMBL1.spades-run-10.Chr1.fa",
-        protein="demo_data/protein/A1163.protein.faa",
+        fasta=lambda wc: next(p["sample"] for p in GROUPED_DATA if strip_ext(p["sample"]) == wc.sample),
+        protein=lambda wc: next(p["protein"] for p in GROUPED_DATA if strip_ext(p["sample"]) == wc.sample),
     output:
-        "results/miniprot/miniprot.gff",
+        "results/samples/{sample}/{sample}.miniprot.gff",
     log:
-        "logs/miniprot.log",
+        "logs/samples/{sample}/miniprot.log",
+    conda:
+        "workflow/envs/busco.yaml"
+    threads: 4
+    shell:
+        """
+        miniprot -t {threads} --gff -I {input.fasta} {input.protein} > {output}
+        """
+
+rule miniprot_reference:
+    input:
+        fasta=lambda wc: next(p["reference"] for p in GROUPED_DATA if strip_ext(p["reference"]) == wc.reference),
+        protein=lambda wc: next(p["protein"] for p in GROUPED_DATA if strip_ext(p["reference"]) == wc.reference)
+    output:
+        "results/references/{reference}/{reference}.miniprot.gff",
+    log:
+        "logs/references/{reference}/miniprot.log",
     conda:
         "workflow/envs/busco.yaml"
     threads: 4
@@ -57,18 +92,17 @@ rule miniprot:
         
 rule earlgrey:
     input:
-        fasta="demo_data/assembly/EMBL1.spades-run-10.Chr1.fa",
+        fasta=lambda wc: next(p["sample"] for p in GROUPED_DATA if strip_ext(p["sample"]) == wc.sample),
     output:
-        directory = directory("results/earlgrey/"),
-        report="results/earlgrey/test_EarlGrey/test_summaryFiles/test.highLevelCount.txt"
+        report="results/samples/{sample}_EarlGrey/{sample}_summaryFiles/{sample}.highLevelCount.txt"
     log:
-        "logs/earlgrey.log",
+        "logs/samples/{sample}/earlgrey.log",
     conda:
         "workflow/envs/earlgrey.yaml"
     threads: 4
     shell:
         """
-        earlGrey -g {input.fasta} -t {threads} -s test -o {output.directory}       
+        earlGrey -g {input.fasta} -t {threads} -s {wildcards.sample} -o results/samples/       
         """
 
 
