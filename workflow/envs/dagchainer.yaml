@@ -1,0 +1,10 @@
+name: dagchainer
+channels:
+  - anaconda
+  - conda-forge
+  - bioconda
+  - defaults
+  - ursky
+dependencies:
+	- pandas=2.2.3
+  - dagchainer=r120920

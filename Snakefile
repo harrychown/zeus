@@ -70,8 +70,26 @@ rule earlgrey:
         """
         earlGrey -g {input.fasta} -t {threads} -s test -o {output.directory}       
         """
+rule dagchainer:
+    input:
+        ref_miniprot="demo_data/miniprot/CEA10_Chr1.gff",
+        miniprot="results/miniprot/miniprot.gff",
+    output:
+        "results/dagchainer/dagchainer.gff",
 
-
+    log:
+        "logs/dagchainer.log",
+    conda:
+        "workflow/envs/dagchainer.yaml"
+    shell:
+        """
+        python $PATH_TO_MINICOMBINER -r={input.ref_miniprot} -d={miniprot} -o=test.matchList
+        # DAGchainer
+        conda activate dagchainer
+        ~/anaconda3/envs/dagchainer/bin/accessory_scripts/filter_repetitive_matches.pl 5 < test.matchList > test.matchList.filtered
+        run_DAG_chainer.pl -i  test.matchList.filtered
+        ###DAG_LENGTH=$(grep -v "#" test.matchList.filtered.aligncoords | awk '{sum += ($7 > $8 ? $7 - $8 : $8 - $7)} END {print sum}')
+        """
 rule summarise:
     input:
         quast="results/quast/report.tsv",
